@@ -64,7 +64,7 @@ const EditUserMessageModal: React.FC<EditUserMessageModalProps> = ({
       aria-labelledby="edit-user-message-title"
     >
       <div
-        className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-lg w-full text-gray-200 transform transition-all duration-300 scale-100 opacity-100"
+        className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg sm:max-w-lg m-4 sm:m-0 text-gray-200 transform transition-all duration-300 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
       >
         <div className="flex justify-between items-center mb-4">

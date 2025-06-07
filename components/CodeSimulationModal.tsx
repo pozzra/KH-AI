@@ -54,7 +54,7 @@ const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({
       aria-labelledby="code-simulation-title"
     >
       <div 
-        className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full text-gray-200 transform transition-all duration-300 scale-100 opacity-100 flex flex-col"
+        className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl sm:max-w-2xl m-4 sm:m-0 text-gray-200 transform transition-all duration-300 scale-100 opacity-100 flex flex-col"
         onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
         style={{ maxHeight: '90vh' }} // Ensure modal fits in viewport
       >

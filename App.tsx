@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import LoginPage from './components/LoginPage';
-import ChatPage from './components/ChatPage';
+import ChatPage from './components/ChatPage.tsx'; // Added .tsx extension
 import Sidebar from './components/Sidebar';
 import DownloaderPage from './components/DownloaderPage'; 
 import { useLanguage } from './contexts/LanguageContext';

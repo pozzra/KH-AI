@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User, ChatMessage as Message, AppView } from '../types';
 import { Chat, Part, Content } from '@google/genai';
@@ -638,12 +637,12 @@ const ChatPage: React.FC<ChatPageProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-700 flex items-start space-x-3 bg-gray-800 shrink-0">
+      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-700 flex items-end space-x-3 bg-gray-800 shrink-0">
         <button 
           type="button"
           onClick={handleImageUploadClick}
           aria-label={t('uploadImageButtonLabel')}
-          className="p-2 text-gray-400 hover:text-sky-400 transition-colors mt-[5px]"
+          className="p-2 text-gray-400 hover:text-sky-400 transition-colors"
           disabled={isLoading || !geminiChat || isListening}
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -664,7 +663,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
             type="button"
             onClick={handleMicButtonClick}
             aria-label={isListening ? t('stopRecordingButtonLabel') : t('recordMessageButtonLabel')}
-            className={`p-2 transition-colors mt-[5px] ${ 
+            className={`p-2 transition-colors ${ 
                 isListening ? 'text-red-500 hover:text-red-400' : 'text-gray-400 hover:text-sky-400'
             }`}
             disabled={isLoading || !geminiChat || !sttIsSupported}

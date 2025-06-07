@@ -103,7 +103,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             onClick={() => onEditMessageClick(message.id, message.text, message.imageBase64, message.imageMimeType)}
             aria-label={t('editButtonLabel')}
             title={t('editButtonLabel')}
-            className={`absolute -top-2 -left-2 p-1.5 rounded-full bg-gray-600 hover:bg-sky-500 text-gray-300 hover:text-white transition-all opacity-0 group-hover:opacity-100 focus:opacity-100`}
+            className={`absolute -top-3 -left-3 p-1.5 rounded-full bg-gray-600 hover:bg-sky-500 text-gray-300 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
@@ -112,7 +112,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {isAI && message.text && t && (
-          <div className="absolute -top-2 -right-2 flex space-x-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <div className="absolute -top-3 -right-3 flex space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             {ttsIsSupported && onSpeakIconClick && (
               <button
                 onClick={() => onSpeakIconClick(message.id, message.text)}

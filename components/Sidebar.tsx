@@ -127,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Confirmation Modal */}
       {showConfirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm sm:max-w-sm m-4 sm:m-0">
             <h3 className="text-lg font-semibold text-sky-400 mb-4">{t('confirmDeleteChatTitle')}</h3>
             <p className="text-gray-300 mb-6 text-sm">
               {t('confirmDeleteChatMessage', getChatTitle(histories.find(h=>h.id === showConfirmDelete)!) || 'this chat')}
