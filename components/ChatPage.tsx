@@ -50,6 +50,7 @@ interface ChatPageProps {
   isSidebarOpen?: boolean; 
   toggleSidebar?: () => void; 
   setCurrentView: (view: AppView) => void;
+  onApiKeyInvalid: () => void; // Add this prop to handle invalid API key state
 }
 
 interface EditingMessageContent {
@@ -68,6 +69,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
     isSidebarOpen,
     toggleSidebar,
     setCurrentView,
+    onApiKeyInvalid, // Destructure the new prop
 }) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [currentInput, setCurrentInput] = useState('');
@@ -337,6 +339,13 @@ const ChatPage: React.FC<ChatPageProps> = ({
 
     } catch (err: any) {
         console.error("Error sending message or processing stream:", err);
+        // Check for specific invalid API key error message
+        if (err.message && (err.message.toLowerCase().includes('api key not valid') || err.message.toLowerCase().includes('invalid api key'))) {
+          onApiKeyInvalid(); // Call the callback to update App state
+          // No need to set local geminiChatError if App will show a global error screen
+          setIsLoading(false);
+          return; // Stop further processing in this function
+        }
         const errorMessageText = err.message || t('failedToSendMessage');
         setGeminiChatError(errorMessageText);
         const errorMsg : Message = { id: `error_${Date.now()}`, text: `${t('errorPrefix')} ${errorMessageText}`, sender: 'error', timestamp: Date.now() };
@@ -433,11 +442,24 @@ const ChatPage: React.FC<ChatPageProps> = ({
         if (ttsIsSpeakingGlobal) ttsCancel(); 
         ttsSpeak(text, language, {
             onStart: () => setActivelySpeakingMessageId(messageId),
-            onEnd: () => { if (activelySpeakingMessageId === messageId) setActivelySpeakingMessageId(null); },
-            onError: () => { if (activelySpeakingMessageId === messageId) setActivelySpeakingMessageId(null); }
+            onEnd: () => {
+                // Use functional update to ensure we're checking against the latest state
+                setActivelySpeakingMessageId(prevId => {
+                    if (prevId === messageId) return null; // Clear if this was the message that ended
+                    return prevId; // Otherwise, keep the current ID (another message might have started)
+                });
+            },
+            onError: (err) => { // Capture the error object
+                console.warn(`TTS error for message ${messageId} with language ${language}. Error:`, err);
+                setActivelySpeakingMessageId(prevId => {
+                    if (prevId === messageId) return null; // Clear if this was the message that errored
+                    return prevId;
+                });
+            }
         });
     }
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

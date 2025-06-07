@@ -12,7 +12,7 @@ import { Language } from './constants';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [apiKeyStatus, setApiKeyStatus] = useState<'checking' | 'ok' | 'missing'>('checking');
+  const [apiKeyStatus, setApiKeyStatus] = useState<'checking' | 'ok' | 'missing' | 'invalid'>('checking');
   const { t, language } = useLanguage(); 
 
   const [chatHistories, setChatHistories] = useState<ChatHistoryItem[]>([]);
@@ -123,6 +123,11 @@ const App: React.FC = () => {
     setChatHistories(updatedHistories);
   };
   
+  const handleApiKeyInvalid = useCallback(() => {
+    setApiKeyStatus('invalid');
+    console.warn("API Key has been marked as invalid by ChatPage.");
+  }, []);
+
   useEffect(() => {
     if (apiKeyStatus === 'ok' && !currentUser) {
       setCurrentUser({ username: t('defaultUsername') || 'Chat User' });
@@ -145,6 +150,17 @@ const App: React.FC = () => {
         <h1 className="text-2xl font-bold mb-4">{t('errorPrefix')} API Key Issue</h1>
         <p>{t('apiKeyMissing')}</p>
         <p className="mt-2 text-sm text-gray-400">Please ensure the <code>API_KEY</code> is correctly set in <code>index.html</code> or your environment.</p>
+      </div>
+    );
+  }
+
+  if (apiKeyStatus === 'invalid') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-red-400 p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">{t('errorPrefix')} API Key Issue</h1>
+        {/* Ensure you have a translation key like 'apiKeyInvalidError' in your language files */}
+        <p>{t('apiKeyInvalidError', 'The API Key provided is invalid or has been rejected by the service. Please verify your Gemini API Key.')}</p>
+        <p className="mt-2 text-sm text-gray-400">Please update the <code>API_KEY</code> in <code>index.html</code> or your environment settings.</p>
       </div>
     );
   }
@@ -181,6 +197,7 @@ const App: React.FC = () => {
               isSidebarOpen={isSidebarOpen} 
               toggleSidebar={handleToggleSidebar} 
               setCurrentView={setCurrentView}
+              onApiKeyInvalid={handleApiKeyInvalid} // Pass the handler down
             />
           ) : (
             <div className="flex items-center justify-center h-full">

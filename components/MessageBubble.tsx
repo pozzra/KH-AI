@@ -19,6 +19,22 @@ const extractFirstCodeBlock = (text: string): string | null => {
   return match ? match[1].trim() : null;
 };
 
+// Helper function to strip markdown for cleaner TTS input
+const getPlainTextForSpeech = (markdownText: string | undefined | null): string => {
+  if (!markdownText) return "";
+  let text = markdownText;
+  // Remove code blocks first
+  text = text.replace(/```(?:[\w#+-.]*\n)?([\s\S]*?)```/g, ' (code block) '); // Announce code blocks
+  // Bold
+  text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  // Italics
+  text = text.replace(/\*(.*?)\*/g, '$1');
+  // Inline code
+  text = text.replace(/`([^`\n]+?)`/g, '$1');
+  // Replace multiple newlines with a single space for better speech flow
+  return text.replace(/\n+/g, ' ').trim();
+};
+
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
@@ -115,7 +131,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div className="absolute -top-3 -right-3 flex space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             {ttsIsSupported && onSpeakIconClick && (
               <button
-                onClick={() => onSpeakIconClick(message.id, message.text)}
+                onClick={() => onSpeakIconClick(message.id, getPlainTextForSpeech(message.text))}
                 aria-label={isThisMessageSpeaking ? t('stopSpeakingAiMessageLabel') : t('speakAiMessageLabel')}
                 title={isThisMessageSpeaking ? t('stopSpeakingAiMessageLabel') : t('speakAiMessageLabel')}
                 className={`p-1.5 rounded-full bg-gray-500 hover:bg-sky-500 text-gray-300 hover:text-white transition-all

@@ -16,6 +16,7 @@ const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({
   t 
 }) => {
   const [editableCode, setEditableCode] = useState(codeToSimulate || "");
+  const [simulatedOutput, setSimulatedOutput] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -42,6 +43,58 @@ const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({
     }
   }, [editableCode]);
 
+  // Simulate code execution when editableCode changes
+  useEffect(() => {
+    if (!isOpen || !editableCode) {
+      setSimulatedOutput(t('codeOutputSimulatedPlaceholder'));
+      return;
+    }
+
+    // Simple simulation logic
+    let outputContent = ""; // This will hold the actual simulated output lines
+    let specificOutputFound = false;
+
+    // Try to match console.log (JavaScript-like)
+    // Regex to capture content within console.log(), handling optional semicolon
+    const consoleLogRegex = /console\.log\s*\((.*?)\)\s*;?/g;
+    let jsMatch;
+    while ((jsMatch = consoleLogRegex.exec(editableCode)) !== null) {
+      const arg = jsMatch[1].trim();
+      try {
+        // Only attempt eval if it looks like a simple string or number literal
+        if ((arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'")) || !isNaN(parseFloat(arg))) {
+          outputContent += `Reu Output : ${eval(arg)}\n`;
+        } else {
+          outputContent += `Reu Output : (from console.log): ${arg}\n`; // Show raw content for complex args
+        }
+      } catch (e) {
+        outputContent += `Reu Output : (from console.log): ${arg}\n`; // Fallback on eval error
+      }
+      specificOutputFound = true;
+    }
+
+    // Try to match return (JavaScript-like)
+    const returnValueMatch = editableCode.match(/return\s+([^;]+?)\s*;?/);
+    if (returnValueMatch && returnValueMatch[1]) {
+      outputContent += `Simulated return: ${returnValueMatch[1].trim()}\n`;
+      specificOutputFound = true;
+    }
+
+    // Try to match print (Python-like)
+    const printRegex = /print\s*\((.*?)\)\s*;?/g;
+    while ((jsMatch = printRegex.exec(editableCode)) !== null) {
+      outputContent += `Output (from print): ${jsMatch[1].trim()}\n`;
+      specificOutputFound = true;
+    }
+
+    if (!specificOutputFound) {
+      // Add a new translation key for this message
+      outputContent += `${t('noSpecificOutputSimulated', 'No specific output could be extracted by this simple simulation.')}\n`;
+    }
+
+    const finalOutput = `${outputContent}`;
+    setSimulatedOutput(finalOutput.replace(/\n/g, '<br />'));
+  }, [editableCode, isOpen, t]);
 
   if (!isOpen || codeToSimulate === null) return null; // Ensure codeToSimulate is not null
 
@@ -87,9 +140,10 @@ const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({
 
         <div className="mt-4 shrink-0">
           <p className="text-sm text-gray-400 mb-1">Output (Simulated):</p>
-          <div className="bg-gray-700 p-3 rounded text-sm text-gray-300 min-h-[50px]">
-            {/* Placeholder for simulated output based on 'editableCode' if needed in future */}
-            {t('codeOutputSimulatedPlaceholder')}
+          <div 
+            className="bg-gray-700 p-3 rounded text-sm text-gray-300 min-h-[50px] whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: simulatedOutput }}
+          >
           </div>
         </div>
 
