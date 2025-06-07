@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KH AI Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif; /* A nice default Tailwind font */
+    }
+    /* Custom scrollbars for dark theme */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #4b5563; /* gray-600 */
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background-color: #1f2937; /* gray-800 */
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.4.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-900 text-gray-100"> {/* Default dark theme */}
+  <div id="root"></div>
+  <script>
+    // Define process.env.API_KEY 
+    // This is where the specific API key is set.
+    const apiKey = "AIzaSyBzidgSZ_eEGBF5C9AJ2JcRFuacOXqo5nc";
+
+    if (!process) {
+      var process = {
+        env: {
+          API_KEY: apiKey
+        }
+      };
+    } else if (!process.env) {
+      process.env = {
+        API_KEY: apiKey
+      };
+    } else { // process and process.env exist, ensure API_KEY is set
+      process.env.API_KEY = apiKey;
+    }
+
+    // You can also expose other environment variables if needed by your app
+    // For example: process.env.REACT_APP_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_FOR_REACT"
+    // Then use process.env.REACT_APP_GEMINI_API_KEY in your JS code.
+    // For this example, we'll stick to process.env.API_KEY as per the instructions.
+  </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

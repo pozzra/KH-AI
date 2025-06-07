@@ -1,0 +1,109 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { TranslationSet } from '../types';
+
+interface CodeSimulationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  codeToSimulate: string | null;
+  t: (key: keyof TranslationSet, ...args: (string | number)[]) => string;
+}
+
+const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  codeToSimulate,
+  t 
+}) => {
+  const [editableCode, setEditableCode] = useState(codeToSimulate || "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isOpen && codeToSimulate) {
+      setEditableCode(codeToSimulate);
+       setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, codeToSimulate]);
+
+  useEffect(() => {
+    // Auto-resize textarea for code
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = 300; // Max height for code textarea
+      textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+      if (scrollHeight > maxHeight) {
+        textareaRef.current.style.overflowY = 'auto';
+      } else {
+        textareaRef.current.style.overflowY = 'hidden';
+      }
+    }
+  }, [editableCode]);
+
+
+  if (!isOpen || codeToSimulate === null) return null; // Ensure codeToSimulate is not null
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 transition-opacity duration-300"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="code-simulation-title"
+    >
+      <div 
+        className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full text-gray-200 transform transition-all duration-300 scale-100 opacity-100 flex flex-col"
+        onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
+        style={{ maxHeight: '90vh' }} // Ensure modal fits in viewport
+      >
+        <div className="flex justify-between items-center mb-4 shrink-0">
+          <h2 id="code-simulation-title" className="text-xl font-semibold text-sky-400">{t('codeSimulationModalTitle')}</h2>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-white rounded-full"
+            aria-label={t('closeModalButtonLabel')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-1 shrink-0">{t('simulatingExecutionText')}</p>
+        <p className="text-xs text-sky-300 mb-2 shrink-0">{t('codeEditableInModalHint')}</p>
+        
+        <div className="bg-gray-900 p-0 my-2 rounded text-sm overflow-hidden flex-grow">
+          <textarea
+            ref={textareaRef}
+            value={editableCode}
+            onChange={(e) => setEditableCode(e.target.value)}
+            className="w-full h-full bg-transparent text-gray-300 p-3 whitespace-pre-wrap font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+            spellCheck="false"
+            aria-label="Editable code area"
+          />
+        </div>
+
+        <div className="mt-4 shrink-0">
+          <p className="text-sm text-gray-400 mb-1">Output (Simulated):</p>
+          <div className="bg-gray-700 p-3 rounded text-sm text-gray-300 min-h-[50px]">
+            {/* Placeholder for simulated output based on 'editableCode' if needed in future */}
+            {t('codeOutputSimulatedPlaceholder')}
+          </div>
+        </div>
+
+        <div className="mt-6 text-right shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors"
+          >
+            {t('closeModalButtonLabel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CodeSimulationModal;
