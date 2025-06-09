@@ -6,7 +6,7 @@ interface MessageBubbleProps {
   message: ChatMessage;
   onSpeakIconClick?: (messageId: string, text: string) => void;
   onRunCodeClick?: (code: string) => void; 
-  onEditMessageClick?: (messageId: string, currentText: string, imageBase64?: string, imageMimeType?: string) => void; // New prop for editing
+  onEditMessageClick?: (messageId: string, currentText: string, images?: Array<{ base64: string; mimeType: string; name?: string;}>) => void;
   activelySpeakingMessageId?: string | null;
   ttsIsSpeakingGlobal?: boolean;
   ttsIsSupported?: boolean;
@@ -93,7 +93,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       .catch(err => console.error("Failed to copy text: ", err));
   };
 
-  const hasImage = message.imageBase64 && message.imageMimeType;
+  const hasImages = message.images && message.images.length > 0;
   const isThisMessageSpeaking = ttsIsSpeakingGlobal && activelySpeakingMessageId === message.id;
   
   const firstCodeBlock = isAI ? extractFirstCodeBlock(message.text) : null;
@@ -101,14 +101,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div className={`w-full ${containerClasses()}`}>
       <div 
-        className={`px-4 py-3 max-w-xs lg:max-w-md xl:max-w-lg break-words shadow-md relative group ${bubbleClasses()} ${hasImage && isUser ? 'space-y-2' : ''}`}
+        className={`px-4 py-3 max-w-xs lg:max-w-md xl:max-w-lg break-words shadow-md relative group ${bubbleClasses()} ${hasImages && isUser ? 'space-y-2' : ''}`}
       >
-        {hasImage && isUser && (
-          <img 
-            src={`data:${message.imageMimeType};base64,${message.imageBase64}`} 
-            alt="User upload"
-            className="max-w-full h-auto rounded-md object-contain max-h-64"
-          />
+        {hasImages && isUser && (
+          <div className={`grid gap-2 ${message.images && message.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {message.images?.map((img, index) => (
+              <img 
+                key={index}
+                src={`data:${img.mimeType};base64,${img.base64}`} 
+                alt={img.name || `User upload ${index + 1}`}
+                className="max-w-full h-auto rounded-md object-contain max-h-48" // Adjusted max height for multiple images
+              />
+            ))}
+          </div>
         )}
         { (message.text || isSystem || isError || (isAI && !message.text)) && (
            <div dangerouslySetInnerHTML={formatText(message.text)} />
@@ -116,7 +121,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {isUser && t && onEditMessageClick && (
           <button
-            onClick={() => onEditMessageClick(message.id, message.text, message.imageBase64, message.imageMimeType)}
+            onClick={() => onEditMessageClick(message.id, message.text, message.images)}
             aria-label={t('editButtonLabel')}
             title={t('editButtonLabel')}
             className={`absolute -top-3 -left-3 p-1.5 rounded-full bg-gray-600 hover:bg-sky-500 text-gray-300 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100`}

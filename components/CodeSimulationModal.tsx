@@ -202,8 +202,7 @@ const CodeSimulationModal: React.FC<CodeSimulationModalProps> = ({
               onClick={handleCopyCode}
               className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-medium text-sky-300 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
             >
-              {t("Copy Code", "Copy Code")}{" "}
-              {/* Add 'copyCodeButtonLabel' to your translations */}
+              {t("copyCodeButtonLabel", "Copy Code")}
             </button>
             <button
               onClick={onClose}

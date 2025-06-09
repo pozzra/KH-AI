@@ -29,8 +29,10 @@ const convertMessagesToGeminiHistory = (messages: Message[]): Content[] => {
     if (msg.sender === 'user' || msg.sender === 'ai') {
       const parts: Part[] = [];
       if (msg.text) parts.push({ text: msg.text });
-      if (msg.imageBase64 && msg.imageMimeType && msg.sender === 'user') { 
-        parts.push({ inlineData: { data: msg.imageBase64, mimeType: msg.imageMimeType } });
+      if (msg.images && msg.sender === 'user') {
+        msg.images.forEach(img => {
+          parts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } });
+        });
       }
       if (parts.length > 0) {
         history.push({ role: msg.sender === 'user' ? 'user' : 'model', parts });
@@ -56,8 +58,11 @@ interface ChatPageProps {
 interface EditingMessageContent {
   id: string;
   text: string;
-  imageBase64?: string;
-  imageMimeType?: string;
+  images?: Array<{
+    base64: string;
+    mimeType: string;
+    name?: string;
+  }>;
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ 
@@ -76,9 +81,9 @@ const ChatPage: React.FC<ChatPageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [geminiChatError, setGeminiChatError] = useState<string | null>(null);
   const [geminiChat, setGeminiChat] = useState<Chat | null>(null);
-  
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
 
   const [activelySpeakingMessageId, setActivelySpeakingMessageId] = useState<string | null>(null);
@@ -193,14 +198,14 @@ const ChatPage: React.FC<ChatPageProps> = ({
 
   useEffect(() => {
     return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+      imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
       if (ttsIsSpeakingGlobal) {
         ttsCancel();
         setActivelySpeakingMessageId(null);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imagePreviewUrl, ttsCancel]);
+  }, [imagePreviewUrls, ttsCancel]); // Use imagePreviewUrls
 
   useEffect(() => {
     if (transcript) {
@@ -248,34 +253,49 @@ const ChatPage: React.FC<ChatPageProps> = ({
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = event.target.files;
     setFileError(null);
-    setImagePreviewUrl(null); 
-    setSelectedFile(null);
+    // Clear previous selections if any, or decide if you want to append.
+    // For simplicity, this example replaces previous selections.
+    // To append, spread existing selectedFiles and imagePreviewUrls.
+    setSelectedFiles([]);
+    imagePreviewUrls.forEach(url => URL.revokeObjectURL(url)); // Revoke old URLs
+    setImagePreviewUrls([]);
 
-    if (file) {
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        setFileError(t('invalidImageTypeError'));
-        return;
-      }
-      if (file.size > MAX_IMAGE_SIZE_BYTES) {
-        setFileError(t('imageTooLargeError', MAX_IMAGE_SIZE_MB.toString()));
-        return;
-      }
-      setSelectedFile(file);
-      const preview = URL.createObjectURL(file);
-      setImagePreviewUrl(preview);
+    if (files && files.length > 0) {
+      const newFiles: File[] = [];
+      const newPreviewUrls: string[] = [];
+      let anyError = false;
+
+      Array.from(files).forEach(file => {
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          setFileError(prev => (prev ? prev + "\n" : "") + `${file.name}: ${t('invalidImageTypeError')}`);
+          anyError = true;
+          return; // Skip this file
+        }
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+          setFileError(prev => (prev ? prev + "\n" : "") + `${file.name}: ${t('imageTooLargeError', MAX_IMAGE_SIZE_MB.toString())}`);
+          anyError = true;
+          return; // Skip this file
+        }
+        newFiles.push(file);
+        newPreviewUrls.push(URL.createObjectURL(file));
+      });
+
+      setSelectedFiles(newFiles);
+      setImagePreviewUrls(newPreviewUrls);
+      if (!anyError) setFileError(null); // Clear general error if all files are fine
     }
   };
 
-  const clearSelectedFile = () => {
-    setSelectedFile(null);
-    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-    setImagePreviewUrl(null);
+  const clearSelectedFiles = () => {
+    setSelectedFiles([]);
+    imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviewUrls([]);
     setFileError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-  
+
   const sendAIMessage = async (chatInstance: Chat, messageToSend: Message, currentMessageHistory: Message[]) => {
     setIsLoading(true);
     setGeminiChatError(null);
@@ -287,15 +307,15 @@ const ChatPage: React.FC<ChatPageProps> = ({
     try {
         const parts: Part[] = [];
         if (messageToSend.text) parts.push({ text: messageToSend.text });
-        if (messageToSend.imageBase64 && messageToSend.imageMimeType) {
-            parts.push({
-            inlineData: { data: messageToSend.imageBase64, mimeType: messageToSend.imageMimeType },
+        if (messageToSend.images && messageToSend.images.length > 0) {
+            messageToSend.images.forEach(img => {
+                parts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } });
             });
         }
         
         if (parts.length === 0) throw new Error("No content to send.");
 
-        const messageContentForAPI: string | Part[] = parts.length === 1 && parts[0].text && !messageToSend.imageBase64 
+        const messageContentForAPI: string | Part[] = parts.length === 1 && parts[0].text && (!messageToSend.images || messageToSend.images.length === 0)
                                                         ? parts[0].text 
                                                         : parts;
 
@@ -370,29 +390,29 @@ const ChatPage: React.FC<ChatPageProps> = ({
     }
     
     const textInput = currentInput.trim();
-    if (!textInput && !selectedFile) return;
+    if (!textInput && selectedFiles.length === 0) return;
     if (!geminiChat || isLoading) return;
 
-    // setIsLoading(true); // Moved to sendAIMessage
-    // setGeminiChatError(null); // Moved to sendAIMessage
     setFileError(null);
 
-    let imageBase64Data: string | undefined = undefined;
-    let imageMimeTypeData: string | undefined = undefined;
-    let imageWasPartOfMessage = false;
+    const imageDatas: Array<{ base64: string; mimeType: string; name?: string }> = [];
     
-    if (selectedFile) {
-      try {
-        imageBase64Data = await fileToBase64(selectedFile);
-        imageMimeTypeData = selectedFile.type;
-        imageWasPartOfMessage = true;
-      } catch (err) {
-        console.error("Error converting file to base64:", err);
-        const fileProcessingError = "Failed to process image.";
-        setGeminiChatError(fileProcessingError); 
-        setFileError(fileProcessingError);
-        setIsLoading(false);
-        return;
+    if (selectedFiles.length > 0) {
+      for (const file of selectedFiles) {
+        try {
+          const base64 = await fileToBase64(file);
+          imageDatas.push({ base64, mimeType: file.type, name: file.name });
+        } catch (err) {
+          console.error("Error converting file to base64:", file.name, err);
+          const fileProcessingError = t('failedToProcessImageError', file.name);
+          setGeminiChatError(prev => (prev ? prev + "\n" : "") + fileProcessingError);
+          setFileError(prev => (prev ? prev + "\n" : "") + fileProcessingError);
+          // Optionally, decide if you want to stop or send without the failed image
+        }
+      }
+      if (geminiChatError || fileError) { // If any error occurred during file processing
+          setIsLoading(false);
+          return;
       }
     }
     
@@ -401,15 +421,15 @@ const ChatPage: React.FC<ChatPageProps> = ({
       text: textInput,
       sender: 'user',
       timestamp: Date.now(),
-      ...(imageBase64Data && imageMimeTypeData && { imageBase64: imageBase64Data, imageMimeType: imageMimeTypeData }),
+      ...(imageDatas.length > 0 && { images: imageDatas }),
     };
     
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     
     setCurrentInput('');
-    if (imageWasPartOfMessage) {
-        clearSelectedFile(); 
+    if (imageDatas.length > 0) { // Check if any images were processed
+        clearSelectedFiles();
     }
     
     await sendAIMessage(geminiChat, userMessage, updatedMessages);
@@ -469,7 +489,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
         isLoading ||
         !geminiChat ||
         (isListening && (!speechPaused || !currentInput.trim())) ||
-        (!isListening && !currentInput.trim() && !selectedFile)
+        (!isListening && !currentInput.trim() && selectedFiles.length === 0)
       );
 
       if (canSubmit) {
@@ -488,8 +508,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
     setCurrentCodeToSimulate(null);
   };
 
-  const handleEditMessageClick = (messageId: string, currentText: string, imageBase64?: string, imageMimeType?: string) => {
-    setEditingMessageContent({ id: messageId, text: currentText, imageBase64, imageMimeType });
+  const handleEditMessageClick = (messageId: string, currentText: string, currentImages?: Array<{ base64: string; mimeType: string; name?: string;}>) => {
+    setEditingMessageContent({ id: messageId, text: currentText, images: currentImages });
     setIsEditUserMessageModalOpen(true);
   };
 
@@ -501,7 +521,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
   const handleSaveEditedUserMessage = async (newText: string) => {
     if (!editingMessageContent) return;
 
-    const { id: editedMessageId, imageBase64: originalImageBase64, imageMimeType: originalImageMimeType } = editingMessageContent;
+    const { id: editedMessageId, images: originalImages } = editingMessageContent;
     
     const editMsgIndex = messages.findIndex(msg => msg.id === editedMessageId);
     if (editMsgIndex === -1) {
@@ -517,8 +537,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
       text: newText,
       id: `user_edited_${Date.now()}`, // New ID for React key and to signify it's a new interaction point
       timestamp: Date.now(), // Update timestamp
-      imageBase64: originalImageBase64, // Preserve original image
-      imageMimeType: originalImageMimeType,
+      images: originalImages, // Preserve original images
     };
 
     const newMessagesStateAfterEdit = [...historyPrefixMessages, editedUserMessageObject];
@@ -628,28 +647,35 @@ const ChatPage: React.FC<ChatPageProps> = ({
         </div>
       )}
 
-      {imagePreviewUrl && (
+      {imagePreviewUrls.length > 0 && (
         <div className="p-2 border-t border-gray-700 bg-gray-800 shrink-0">
-          <div className="flex items-center space-x-2 p-2 bg-gray-600 rounded-md">
-            <img src={imagePreviewUrl} alt={t('imagePreviewAlt')} className="h-16 w-16 object-cover rounded-md" />
-            <div className="text-sm text-gray-300 overflow-hidden whitespace-nowrap overflow-ellipsis flex-grow">
-              {selectedFile?.name}
-            </div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-400">{t('ImagesPreview', `${selectedFiles.length} image(s) selected`)}</span>
             <button
-              onClick={clearSelectedFile}
-              aria-label={t('clearSelectedImageButtonLabel')}
-              className="p-1 text-gray-400 hover:text-white"
+              onClick={clearSelectedFiles}
+              aria-label={t('clearAllSelectedImagesButtonLabel', 'Clear all images')}
+              className="p-1 text-xs text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-500 rounded"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              {t('Clear All', 'Clear All')}
             </button>
           </div>
-        </div>
-      )}
-      {fileError && ( 
-        <div className="p-2 text-red-400 text-xs text-center bg-gray-800 border-t border-gray-700 pt-0 shrink-0">
-          {fileError}
+          <div className="flex flex-wrap gap-2 p-2 bg-gray-600 rounded-md max-h-32 overflow-y-auto">
+            {imagePreviewUrls.map((url, index) => (
+              <div key={index} className="relative">
+                <img 
+                  src={url} 
+                  alt={selectedFiles[index]?.name || t('imagePreviewAlt', `Preview ${index + 1}`)} 
+                  className="h-20 w-20 object-cover rounded-md" 
+                />
+                {/* Optional: Add individual remove button here if needed */}
+              </div>
+            ))}
+          </div>
+          {fileError && ( 
+            <div className="mt-1 p-1 text-red-400 text-xs text-center whitespace-pre-line">
+              {fileError}
+            </div>
+          )}
         </div>
       )}
 
@@ -664,8 +690,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
           type="button"
           onClick={handleImageUploadClick}
           aria-label={t('uploadImageButtonLabel')}
-          className={`p-2 text-gray-400 hover:text-sky-400 transition-colors rounded-md ${selectedFile ? 'cursor-not-allowed opacity-50' : ''}`}
-          disabled={isLoading || !geminiChat || isListening || !!selectedFile}
+          className={`p-2 text-gray-400 hover:text-sky-400 transition-colors rounded-md ${selectedFiles.length > 0 ? 'cursor-not-allowed opacity-50' : ''}`}
+          disabled={isLoading || !geminiChat || isListening || selectedFiles.length > 0} // Disable if images are already selected, or allow appending
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.122 2.122l7.81-7.81" />
@@ -676,7 +702,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
           ref={fileInputRef}
           accept={ALLOWED_IMAGE_TYPES.join(',')}
           onChange={handleFileChange}
-          multiple={false} // Explicitly ensure single file selection
+          multiple={true} // Allow multiple file selection
           className="hidden"
           id="imageUpload"
           aria-hidden="true"
@@ -724,7 +750,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
             isLoading ||
             !geminiChat ||
             (isListening && (!speechPaused || !currentInput.trim())) ||
-            (!isListening && !currentInput.trim() && !selectedFile)
+            (!isListening && !currentInput.trim() && selectedFiles.length === 0)
           }
         >
           {isLoading ? <LoadingSpinner size="sm" /> : t('sendMessageButton')}
