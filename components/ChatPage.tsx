@@ -664,8 +664,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
           type="button"
           onClick={handleImageUploadClick}
           aria-label={t('uploadImageButtonLabel')}
-          className="p-2 text-gray-400 hover:text-sky-400 transition-colors"
-          disabled={isLoading || !geminiChat || isListening}
+          className={`p-2 text-gray-400 hover:text-sky-400 transition-colors ${selectedFile ? 'cursor-not-allowed opacity-50' : ''}`}
+          disabled={isLoading || !geminiChat || isListening || !!selectedFile} // Disable if an image is already selected
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.122 2.122l7.81-7.81" />
@@ -676,6 +676,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
           ref={fileInputRef}
           accept={ALLOWED_IMAGE_TYPES.join(',')}
           onChange={handleFileChange}
+          multiple={false} // Explicitly ensure single file selection
           className="hidden"
           id="imageUpload"
           aria-hidden="true"
@@ -691,14 +692,15 @@ const ChatPage: React.FC<ChatPageProps> = ({
             disabled={isLoading || !geminiChat || !sttIsSupported}
         >
             {isListening ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                    <path d="M12 18.75a6.75 6.75 0 006.75-6.75v-3.5a.75.75 0 00-1.5 0v3.5a5.25 5.25 0 11-10.5 0v-3.5a.75.75 0 00-1.5 0v3.5A6.75 6.75 0 0012 18.75z" />
-                    <path d="M8.625 9.75a.75.75 0 00-1.5 0v1.5c0 .414.336.75.75.75H9A.75.75 0 009 11.25H8.625v-1.5zM15 11.25h.375a.75.75 0 00.75-.75v-1.5a.75.75 0 00-1.5 0v1.5c0 .414.336.75.75.75zM.75 12a11.25 11.25 0 0011.25 11.25A11.25 11.25 0 0023.25 12 .75.75 0 0022.5 12h-3a.75.75 0 00-.75.75 7.5 7.5 0 01-15 0A.75.75 0 004.5 12h-3a.75.75 0 00-.75.75z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="currentColor" className="bi bi-mic-mute" viewBox="0 0 16 16">
+  <path d="M13 8c0 .564-.094 1.107-.266 1.613l-.814-.814A4 4 0 0 0 12 8V7a.5.5 0 0 1 1 0zm-5 4c.818 0 1.578-.245 2.212-.667l.718.719a5 5 0 0 1-2.43.923V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 1 0v1a4 4 0 0 0 4 4m3-9v4.879l-1-1V3a2 2 0 0 0-3.997-.118l-.845-.845A3.001 3.001 0 0 1 11 3"/>
+  <path d="m9.486 10.607-.748-.748A2 2 0 0 1 6 8v-.878l-1-1V8a3 3 0 0 0 4.486 2.607m-7.84-9.253 12 12 .708-.708-12-12z"/>
+</svg>
             ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a.75.75 0 00.75-.75v-3.75a.75.75 0 00-1.5 0v3.75a.75.75 0 00.75.75zM19.5 12a7.5 7.5 0 11-15 0m15 0v.004c0 .323-.01.642-.027.955a13.43 13.43 0 01-.735 3.093m1.066-6.076a13.51 13.51 0 01-1.019 3.033m1.019-3.033A13.44 13.44 0 0019.5 12c0-2.09-.48-4.045-1.333-5.757m1.333 5.757a13.51 13.51 0 01-1.019 3.033M3.75 12A7.5 7.5 0 1118.75 12M3.75 12h.004c.009 0 .018 0 .026-.002a13.43 13.43 0 01.735-3.093M3.723 8.95A13.51 13.51 0 014.742 5.917m-1.02 3.033A13.44 13.44 0 003.75 12c0 2.09.48 4.045 1.333 5.757m-1.333-5.757a13.51 13.51 0 011.019-3.033" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="currentColor" className="bi bi-mic" viewBox="0 0 16 16">
+  <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5"/>
+  <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3"/>
+</svg>
             )}
         </button>
 
