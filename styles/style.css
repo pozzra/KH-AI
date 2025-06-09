@@ -1,0 +1,32 @@
+/* General body styling (optional, as Tailwind's preflight handles many defaults) */
+body {
+  font-family: "Inter", sans-serif; /* Example: Using a common sans-serif font */
+  /* Tailwind's bg-gray-900 is applied in App.tsx, so this might be redundant unless you want a non-Tailwind default */
+
+}
+
+/* Custom scrollbar styling (for Webkit browsers like Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px; /* Width of the vertical scrollbar */
+  height: 8px; /* Height of the horizontal scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: #2d3748; /* Tailwind's gray-700 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #4a5568; /* Tailwind's gray-600 */
+  border-radius: 10px;
+  border: 2px solid #2d3748; /* Creates padding around thumb, matches track color */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #718096; /* Tailwind's gray-500 */
+}
+
+/* Add any other global custom styles or classes here */
+.my-custom-class {
+  color: red;
+}
